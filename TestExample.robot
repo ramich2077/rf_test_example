@@ -5,10 +5,14 @@ Library    Collections
 Library    String
 
 *** Variables ***
+#Moved common test variables to a single place
 &{HEADERS}    x-api-key=DEMO-API-KEY
 ${BASE_URL}    https://api.thecatapi.com/v1
 
 *** Test Cases ***
+#I tried to make keyword definitions very close to original requriements (some BDD-style)
+#Also tried to tie keyword names to API buisness logic and not just HTTP methods' names
+
 First scenario
     ${response}    Get votes by /votes
     Save ${response.json()} as response_data
@@ -48,6 +52,7 @@ Sixth scenario
     ${response} has value NOT_FOUND in field message
 
 *** Keywords ***
+#I could also move these keywords to a Python file, but decided it will be overkill for this task
 Get votes by ${url}
     ${response}    GET    ${BASE_URL}${url}    headers=${HEADERS}    expected_status=any
     [Return]    ${response}
@@ -61,6 +66,7 @@ Delete vote by ${url}
     ${response}    DELETE    ${BASE_URL}${url}    headers=${HEADERS}
     [Return]    ${response}
 
+#With this keyword we can save data to a global variable to access it later
 Save ${data} as ${alias}
     Set suite variable    $${alias}    ${data}
 
@@ -77,6 +83,9 @@ ${response} body has more than ${count} items
 ${response} body is not empty
     Should Not Be Empty    ${response.json()}
 
+#The simpliest way to check that all fields and its values from reference match the fields in the actual response
+#Note that in this case response can also have new fields which are not present in the reference - if this
+# an undesired befavior, we should use "equals"
 ${response} fields match the corresponding fields in ${reference}
     Dictionary should contain sub dictionary    ${response.json()}    ${reference}
 
