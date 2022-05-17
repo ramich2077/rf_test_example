@@ -10,54 +10,59 @@ ${BASE_URL}    https://api.thecatapi.com/v1
 
 *** Test Cases ***
 First scenario
-    ${response}    Send request to ${BASE_URL}/votes and save response
+    ${response}    Get votes by /votes
+    Save ${response.json()} as response_data
     ${response} has status 200
     ${response} body has more than 0 items
-    Set suite variable    $response_data    ${response.json()}
 
 Second Scenario
-    ${item}    Get random item from ${RESPONSE_DATA}
-    ${id}    Set Variable    ${item}[id]
-    ${response}    Send request to ${BASE_URL}/votes/${id} and save response
+    ${item}    Get random item from ${response_data}
+    ${response}    Get votes by /votes/${item}[id]
     ${response} has status 200
     ${response} body is not empty
-    Dictionary should contain sub dictionary    ${response.json()}    ${item}
+    ${response} fields match the corresponding fields in ${item}
 
 Third scenario
     ${random_image_id}    Generate Random String
-    ${response}    Post data and save response    url=${BASE_URL}/votes
-    ...                                           image_id=${random_image_id}    sub_id=test_user    value=100
+    ${response}    Post vote data    url=/votes
+    ...                              image_id=${random_image_id}    sub_id=test_user    value=100
     ${response} has status 200
-    Dictionary should contain item    ${response.json()}    message    SUCCESS
-    Dictionary should contain key    ${response.json()}    id
-    Set Suite Variable    $vote_id    ${response.json()}[id]
+    ${response} has value SUCCESS in field message
+    ${response} has field id
+    Save ${response.json()}[id] as vote_id
 
 Fourth scenario
-    ${response}    Send request to ${BASE_URL}/votes/${vote_id} and save response
+    ${response}    Get votes by /votes/${vote_id}
     ${response} has status 200
     ${response} body is not empty
-    Dictionary should contain item    ${response.json()}    id    ${vote_id}
+    ${response} has value ${vote_id} in field id
 
 Fifth scenario
-    ${response}    DELETE    ${BASE_URL}/votes/${vote_id}    headers=${HEADERS}
+    ${response}    Delete vote by /votes/${vote_id}
     ${response} has status 200
-    Dictionary should contain item    ${response.json()}    message    SUCCESS
+    ${response} has value SUCCESS in field message
 
 Sixth scenario
-    ${response}    Send request to ${BASE_URL}/votes/${vote_id} and save response
+    ${response}    Get votes by /votes/${vote_id}
     ${response} has status 404
-    Dictionary should contain item    ${response.json()}    message    NOT_FOUND
-
+    ${response} has value NOT_FOUND in field message
 
 *** Keywords ***
-Send request to ${url} and save response
-    ${response}    GET    ${url}    headers=${HEADERS}    expected_status=any
+Get votes by ${url}
+    ${response}    GET    ${BASE_URL}${url}    headers=${HEADERS}    expected_status=any
     [Return]    ${response}
 
-Post data and save response
+Post vote data
     [Arguments]    ${url}    &{data}
-    ${response}    POST    ${url}    headers=${HEADERS}    json=${data}
+    ${response}    POST    ${BASE_URL}${url}    headers=${HEADERS}    json=${data}
     [Return]    ${response}
+
+Delete vote by ${url}
+    ${response}    DELETE    ${BASE_URL}${url}    headers=${HEADERS}
+    [Return]    ${response}
+
+Save ${data} as ${alias}
+    Set suite variable    $${alias}    ${data}
 
 ${response} has status ${status}
     Status Should Be    ${status}    ${response}
@@ -72,3 +77,11 @@ ${response} body has more than ${count} items
 ${response} body is not empty
     Should Not Be Empty    ${response.json()}
 
+${response} fields match the corresponding fields in ${reference}
+    Dictionary should contain sub dictionary    ${response.json()}    ${reference}
+
+${response} has value ${value} in field ${field}
+    Dictionary should contain item    ${response.json()}    ${field}    ${value}
+
+${response} has field ${field}
+    Dictionary should contain key    ${response.json()}    ${field}
